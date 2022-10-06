@@ -28,15 +28,13 @@ void cycle(char str[]){
 }
 
 void cycleFile(FILE *fd){
-    char str[MAX_SIZE];
     char strSizeS[MAX_SIZE_S];
-    char tmp[30];
-    if (fgets(strSizeS, MAX_SIZE_S, fd) == NULL) {fprintf(stderr, "Can't read the number of words in the file.");exit(1);}
     int strSize = atoi(strSizeS);
     char strWin[WINDOW+1] = {' '};
     strWin[WINDOW] = '\0';
     char c;
     int j = 0;
+    if (fgets(strSizeS, MAX_SIZE_S, fd) == NULL) {fprintf(stderr, "Can't read the number of words in the file.");exit(1);}
     for (int i = 0; i<min(strSize, WINDOW); i++){
         c = fgetc(fd);
         strWin[i] = c;
