@@ -2,66 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <sys/time.h>
 
-#define WINDOW 115
-#define MAX_SIZE 30
-#define MAX_SIZE_S 10 // maximum length of the number of words ex: 10 => maximum number of words is 10^11 - 1
-
-int min(int a, int b){
-    if (a < b) {return a;}
-    return b;
-}
-
-void cycle(char str[]){
-    int strLength = strlen(str);
-    int j = 0;
-    for (int i=-1; i<strLength; i++){
-        while ((i != -1) && (getch() != str[i])) {}
-        clear();
-        move(0,0);
-        for (int k=0; k < min(strLength, WINDOW - 1) - j; k++) {addch(str[i+k+1]);}
-        if ((i + WINDOW < strLength)){
-            addch(str[i+WINDOW]);
-        } else {j++;}
-        refresh();
-    }
-}
-
-void cycleFile(FILE *fd){
-    char strSizeS[MAX_SIZE_S];
-    int strSize = atoi(strSizeS);
-    char strWin[WINDOW+1] = {' '};
-    strWin[WINDOW] = '\0';
-    char c;
-    int j = 0;
-    if (fgets(strSizeS, MAX_SIZE_S, fd) == NULL) {fprintf(stderr, "Can't read the number of words in the file.");exit(1);}
-    for (int i = 0; i<min(strSize, WINDOW); i++){
-        c = fgetc(fd);
-        strWin[i] = c;
-        addch(c);
-    }
-    // strWin contains the first window of chars, it's displayed, let's iterate through the string
-    for (int i = 0; i<strSize;i++){
-        while (getch() != strWin[0]){}
-        clear();
-        move(0,0);
-        for (int k=0; k<min(strSize,WINDOW) -j-1;k++){
-            c = strWin[k+1];
-            strWin[k] = c;
-            addch(c);
-        }
-        if ((i + WINDOW < strSize)){
-            c = fgetc(fd);
-            strWin[WINDOW-1] = c;
-            addch(c);
-        } else {j++;}
-    }
-
-}
+#define WINDOW 100
 
 
-int main(int argc, char const *argv[])
-{
+void init(){
     initscr();
     cbreak();
     noecho();
@@ -69,12 +16,41 @@ int main(int argc, char const *argv[])
     start_color();
     init_pair(1, COLOR_GREEN, COLOR_BLACK);
     attron(COLOR_PAIR(1));
+}
 
-    //cycle("my really long long string");
-    FILE* txt = fopen("text.txt", "r");
-    cycleFile(txt);
-    fclose(txt);
+void cycle(FILE* fd){
+    char strWin[WINDOW+1];
+    strWin[WINDOW] = '\0';
+    char c;
+    int j = 0;
+
+    init();
+    
+    for (int i = 0; i < WINDOW; i++){
+        c = fgetc(fd);
+        if (c == EOF) {j = WINDOW - i; break;}
+        strWin[i] = c;
+        addch(c);
+    }
+
+    while (j != WINDOW){ 
+        while (getch() != strWin[0]){}
+        clear();
+        move(0,0);
+        for (int i = 0; i < WINDOW - j - 1; i++){c = strWin[i+1]; strWin[i] = c; addch(c);}
+        if (j > 0){j++;}
+        else{c = getc(fd); if (c == EOF){j++;} else {strWin[WINDOW - 1] = c; addch(c);}}
+    }
     attroff(COLOR_PAIR(1));
     endwin();
+}
+
+int main(int argc, char const *argv[])
+{
+    if (argc != 2) {printf("Not enough arguments.\nUsage : ./typeracer <fileName>");exit(1);}
+    FILE* txt = fopen(argv[1], "r");
+    if (txt == NULL) {fprintf(stderr,"Can't open the file %s.\nUsage : ./typeracer <fileName>", argv[1]);exit(1);}
+    cycle(txt);
+    fclose(txt);
     return 0;
 }
